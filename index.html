@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>AI Prompt Enhancer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- History Sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="historySidebar">
+    <div class="sidebar-header">
+      <h2>Prompt History</h2>
+      <button class="sidebar-close" id="closeSidebar" aria-label="Close history">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="sidebar-content" id="historyList">
+      <!-- History items will be rendered here -->
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn btn-danger btn-sm" id="clearHistoryBtn">
+        <img src="icons/delete_2_line.svg" width="16" height="16" alt="">
+        Clear All History
+      </button>
+    </div>
+  </aside>
+
+  <div class="app-wrapper" id="appWrapper">
+    <div class="container">
+      <header>
+        <div class="header-row">
+          <div class="header-left">
+            <button class="menu-btn" id="historyBtn" aria-label="Open history">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+            <div class="header-content">
+              <h1>AI Prompt Enhancer</h1>
+              <p class="subtitle">Transform your prompts for Cursor, Antigravity & other AI coding assistants</p>
+            </div>
+          </div>
+          <button class="settings-btn" id="settingsBtn" aria-label="Settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <section class="prompt-section">
+        <label for="inputPrompt">Your Prompt</label>
+        <textarea id="inputPrompt" placeholder="Enter your prompt here... For example:&#10;&#10;Bir e-ticaret sitesi yap, ürün listesi olsun, sepet olsun, ödeme sayfası olsun"></textarea>
+      </section>
+
+      <div class="button-row">
+        <button class="btn btn-primary" id="enhanceBtn" disabled>
+          Enhance Prompt
+        </button>
+      </div>
+
+      <div class="error-message" id="errorMessage"></div>
+    </div>
+
+    <footer>
+      <p>Powered by <a href="https://openrouter.ai" target="_blank">OpenRouter</a> • Using Devstral Free Model</p>
+    </footer>
+  </div>
+
+  <!-- Loading Overlay with Blur -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+      </div>
+      <p class="loading-text">Prompt is being prepared</p>
+      <div class="loading-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal modal-settings">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="modal-close" id="closeSettings" aria-label="Close settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="setting-group">
+          <label for="apiKey">OpenRouter API Key</label>
+          <div class="input-wrapper">
+            <input type="password" id="apiKey" placeholder="sk-or-v1-..." autocomplete="off">
+            <button class="toggle-visibility" id="toggleVisibility" type="button" aria-label="Toggle visibility">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="setting-hint">Get your free API key from <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></p>
+        </div>
+
+        <div class="setting-group">
+          <label for="outputLanguage">Output Language</label>
+          <select id="outputLanguage">
+            <option value="Turkish">Türkçe</option>
+            <option value="English" selected>English</option>
+            <option value="Chinese">中文</option>
+            <option value="French">Français</option>
+            <option value="Korean">한국어</option>
+            <option value="Japanese">日本語</option>
+            <option value="Hindi">हिन्दी</option>
+            <option value="Albanian">Shqip</option>
+          </select>
+          <p class="setting-hint">The enhanced prompt will be generated in this language</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="save-status" id="saveStatus"></div>
+        <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Output Modal -->
+  <div class="modal-overlay" id="outputModal">
+    <div class="modal modal-output">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <svg class="success-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          <h2>Enhanced Prompt Ready</h2>
+        </div>
+        <div class="modal-header-actions">
+          <span class="copy-feedback" id="copyFeedback">Copied!</span>
+          <button class="btn btn-secondary btn-sm" id="copyBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+          <button class="modal-close" id="closeOutput" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="modal-body output-body">
+        <div class="output-content" id="outputContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Detail Modal -->
+  <div class="modal-overlay" id="historyDetailModal">
+    <div class="modal modal-history-detail">
+      <div class="modal-header">
+        <h2>Prompt Details</h2>
+        <button class="modal-close" id="closeHistoryDetail" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body history-detail-body">
+        <div class="history-detail-section">
+          <div class="history-detail-label">
+            <span>Input Prompt</span>
+            <button class="btn btn-secondary btn-xs" id="copyInputBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <div class="history-detail-content" id="historyInputContent"></div>
+        </div>
+        <div class="history-detail-section">
+          <div class="history-detail-label">
+            <span>Enhanced Output</span>
+            <button class="btn btn-secondary btn-xs" id="copyOutputBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <div class="history-detail-content" id="historyOutputContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

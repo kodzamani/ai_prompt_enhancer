@@ -1,0 +1,465 @@
+// DOM Elements - Main
+const appWrapper = document.getElementById('appWrapper');
+const inputPrompt = document.getElementById('inputPrompt');
+const enhanceBtn = document.getElementById('enhanceBtn');
+const loadingOverlay = document.getElementById('loadingOverlay');
+const errorMessage = document.getElementById('errorMessage');
+
+// DOM Elements - Sidebar (History)
+const historyBtn = document.getElementById('historyBtn');
+const historySidebar = document.getElementById('historySidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const closeSidebar = document.getElementById('closeSidebar');
+const historyList = document.getElementById('historyList');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+// DOM Elements - History Detail Modal
+const historyDetailModal = document.getElementById('historyDetailModal');
+const closeHistoryDetail = document.getElementById('closeHistoryDetail');
+const historyInputContent = document.getElementById('historyInputContent');
+const historyOutputContent = document.getElementById('historyOutputContent');
+const copyInputBtn = document.getElementById('copyInputBtn');
+const copyOutputBtn = document.getElementById('copyOutputBtn');
+
+// DOM Elements - Settings Modal
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeSettings = document.getElementById('closeSettings');
+const apiKeyInput = document.getElementById('apiKey');
+const toggleVisibilityBtn = document.getElementById('toggleVisibility');
+const outputLanguage = document.getElementById('outputLanguage');
+const saveSettingsBtn = document.getElementById('saveSettings');
+const saveStatus = document.getElementById('saveStatus');
+
+// DOM Elements - Output Modal
+const outputModal = document.getElementById('outputModal');
+const closeOutput = document.getElementById('closeOutput');
+const outputContent = document.getElementById('outputContent');
+const copyBtn = document.getElementById('copyBtn');
+const copyFeedback = document.getElementById('copyFeedback');
+
+// Eye icons for toggle visibility
+const eyeIcon = toggleVisibilityBtn.querySelector('.eye-icon');
+const eyeOffIcon = toggleVisibilityBtn.querySelector('.eye-off-icon');
+
+// Settings state
+let currentApiKey = '';
+let currentLanguage = 'English';
+
+// History state
+let promptHistory = [];
+
+// ==================== History Sidebar ====================
+
+function openSidebar() {
+  historySidebar.classList.add('open');
+  sidebarOverlay.classList.add('visible');
+  renderHistory();
+}
+
+function closeSidebarPanel() {
+  historySidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('visible');
+}
+
+historyBtn.addEventListener('click', openSidebar);
+closeSidebar.addEventListener('click', closeSidebarPanel);
+sidebarOverlay.addEventListener('click', closeSidebarPanel);
+
+// Load history from localStorage
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem('prompt_history');
+    if (saved) {
+      promptHistory = JSON.parse(saved);
+    }
+  } catch (e) {
+    promptHistory = [];
+  }
+}
+
+// Save history to localStorage
+function saveHistory() {
+  try {
+    localStorage.setItem('prompt_history', JSON.stringify(promptHistory));
+  } catch (e) {
+    // Storage full or unavailable
+  }
+}
+
+// Add new history item
+function addToHistory(input, output) {
+  const item = {
+    id: Date.now(),
+    input: input,
+    output: output,
+    date: new Date().toISOString()
+  };
+  promptHistory.unshift(item);
+  // Keep only last 50 items
+  if (promptHistory.length > 50) {
+    promptHistory = promptHistory.slice(0, 50);
+  }
+  saveHistory();
+}
+
+// Delete history item
+function deleteHistoryItem(id) {
+  promptHistory = promptHistory.filter(item => item.id !== id);
+  saveHistory();
+  renderHistory();
+}
+
+// Clear all history
+function clearAllHistory() {
+  if (confirm('Are you sure you want to clear all history?')) {
+    promptHistory = [];
+    saveHistory();
+    renderHistory();
+  }
+}
+
+clearHistoryBtn.addEventListener('click', clearAllHistory);
+
+// Render history list
+function renderHistory() {
+  if (promptHistory.length === 0) {
+    historyList.innerHTML = `
+      <div class="history-empty">
+        <img src="icons/empty_box_line.svg" class="history-empty-icon" width="48" height="48" alt="">
+        <p>No history yet</p>
+        <p style="font-size: 12px; margin-top: 8px;">Your enhanced prompts will appear here</p>
+      </div>
+    `;
+    return;
+  }
+
+  historyList.innerHTML = promptHistory.map(item => {
+    const date = new Date(item.date);
+    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    return `
+      <div class="history-item" data-id="${item.id}">
+        <div class="history-item-header">
+          <span class="history-item-date">${formattedDate}</span>
+          <button class="history-item-delete" data-id="${item.id}" title="Delete">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="history-item-input">${escapeHtml(item.input)}</div>
+        <div class="history-item-output">${escapeHtml(item.output)}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers
+  historyList.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (!e.target.closest('.history-item-delete')) {
+        const id = parseInt(el.dataset.id);
+        openHistoryDetail(id);
+      }
+    });
+  });
+
+  historyList.querySelectorAll('.history-item-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      deleteHistoryItem(id);
+    });
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ==================== History Detail Modal ====================
+
+function openHistoryDetail(id) {
+  const item = promptHistory.find(h => h.id === id);
+  if (!item) return;
+
+  historyInputContent.textContent = item.input;
+  historyOutputContent.textContent = item.output;
+  historyDetailModal.classList.add('visible');
+  closeSidebarPanel();
+}
+
+function closeHistoryDetailModal() {
+  historyDetailModal.classList.remove('visible');
+}
+
+closeHistoryDetail.addEventListener('click', closeHistoryDetailModal);
+
+historyDetailModal.addEventListener('click', (e) => {
+  if (e.target === historyDetailModal) {
+    closeHistoryDetailModal();
+  }
+});
+
+// Copy buttons in history detail
+copyInputBtn.addEventListener('click', () => {
+  copyToClipboard(historyInputContent.textContent);
+});
+
+copyOutputBtn.addEventListener('click', () => {
+  copyToClipboard(historyOutputContent.textContent);
+});
+
+async function copyToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  }
+}
+
+// ==================== Loading Overlay ====================
+
+function showLoading() {
+  appWrapper.classList.add('blurred');
+  loadingOverlay.classList.add('visible');
+}
+
+function hideLoading() {
+  appWrapper.classList.remove('blurred');
+  loadingOverlay.classList.remove('visible');
+}
+
+// ==================== Settings Modal ====================
+
+function openSettings() {
+  settingsModal.classList.add('visible');
+  apiKeyInput.value = currentApiKey;
+  outputLanguage.value = currentLanguage;
+  apiKeyInput.type = 'password';
+  eyeIcon.style.display = 'block';
+  eyeOffIcon.style.display = 'none';
+  saveStatus.classList.remove('visible');
+}
+
+function closeSettingsModal() {
+  settingsModal.classList.remove('visible');
+}
+
+settingsBtn.addEventListener('click', openSettings);
+closeSettings.addEventListener('click', closeSettingsModal);
+
+settingsModal.addEventListener('click', (e) => {
+  if (e.target === settingsModal) {
+    closeSettingsModal();
+  }
+});
+
+// Toggle password visibility
+toggleVisibilityBtn.addEventListener('click', () => {
+  const isPassword = apiKeyInput.type === 'password';
+  apiKeyInput.type = isPassword ? 'text' : 'password';
+  eyeIcon.style.display = isPassword ? 'none' : 'block';
+  eyeOffIcon.style.display = isPassword ? 'block' : 'none';
+});
+
+// Save settings
+saveSettingsBtn.addEventListener('click', () => {
+  const apiKey = apiKeyInput.value.trim();
+  const language = outputLanguage.value;
+  
+  if (apiKey && !apiKey.startsWith('sk-')) {
+    showSettingsError('Invalid API key format. Key should start with "sk-"');
+    return;
+  }
+  
+  try {
+    if (apiKey) {
+      localStorage.setItem('openrouter_api_key', apiKey);
+      currentApiKey = apiKey;
+    } else {
+      localStorage.removeItem('openrouter_api_key');
+      currentApiKey = '';
+    }
+    
+    localStorage.setItem('selectedLanguage', language);
+    currentLanguage = language;
+    
+    updateEnhanceButton();
+    closeSettingsModal();
+    
+  } catch (e) {
+    showSettingsError('Failed to save settings. Please try again.');
+  }
+});
+
+function showSettingsError(message) {
+  saveStatus.textContent = message;
+  saveStatus.style.color = 'var(--error-color)';
+  saveStatus.classList.add('visible');
+  setTimeout(() => {
+    saveStatus.classList.remove('visible');
+    saveStatus.style.color = '';
+    saveStatus.textContent = '';
+  }, 3000);
+}
+
+// ==================== Output Modal ====================
+
+function openOutputModal(content) {
+  outputContent.textContent = content;
+  outputModal.classList.add('visible');
+}
+
+function closeOutputModal() {
+  outputModal.classList.remove('visible');
+}
+
+closeOutput.addEventListener('click', closeOutputModal);
+
+outputModal.addEventListener('click', (e) => {
+  if (e.target === outputModal) {
+    closeOutputModal();
+  }
+});
+
+// ==================== Keyboard Shortcuts ====================
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (historyDetailModal.classList.contains('visible')) {
+      closeHistoryDetailModal();
+    } else if (outputModal.classList.contains('visible')) {
+      closeOutputModal();
+    } else if (settingsModal.classList.contains('visible')) {
+      closeSettingsModal();
+    } else if (historySidebar.classList.contains('open')) {
+      closeSidebarPanel();
+    }
+  }
+});
+
+// ==================== Load Saved Settings ====================
+
+function loadSettings() {
+  try {
+    const savedKey = localStorage.getItem('openrouter_api_key');
+    const savedLanguage = localStorage.getItem('selectedLanguage');
+    
+    if (savedKey) {
+      currentApiKey = savedKey;
+    }
+    
+    if (savedLanguage) {
+      currentLanguage = savedLanguage;
+    }
+    
+    updateEnhanceButton();
+  } catch (e) {
+    // localStorage unavailable
+  }
+}
+
+// ==================== Main Functionality ====================
+
+function updateEnhanceButton() {
+  const hasApiKey = currentApiKey.length > 0;
+  const hasPrompt = inputPrompt.value.trim().length > 0;
+  enhanceBtn.disabled = !hasApiKey || !hasPrompt;
+}
+
+inputPrompt.addEventListener('input', updateEnhanceButton);
+
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.classList.add('visible');
+}
+
+function hideError() {
+  errorMessage.classList.remove('visible');
+}
+
+// Enhance prompt
+async function enhancePrompt() {
+  if (!currentApiKey) {
+    showError('Please set your API key in Settings first.');
+    openSettings();
+    return;
+  }
+  
+  const prompt = inputPrompt.value.trim();
+  if (!prompt) return;
+
+  hideError();
+  showLoading();
+  enhanceBtn.disabled = true;
+
+  try {
+    const result = await window.electronAPI.enhancePrompt(currentApiKey, prompt, currentLanguage);
+
+    hideLoading();
+    
+    if (result.success) {
+      // Save to history
+      addToHistory(prompt, result.enhancedPrompt);
+      openOutputModal(result.enhancedPrompt);
+    } else {
+      showError(result.error || 'An error occurred while enhancing the prompt.');
+    }
+  } catch (error) {
+    hideLoading();
+    showError('Failed to connect to the API. Please check your internet connection.');
+  } finally {
+    updateEnhanceButton();
+  }
+}
+
+enhanceBtn.addEventListener('click', enhancePrompt);
+
+// Copy to clipboard
+copyBtn.addEventListener('click', async () => {
+  const text = outputContent.textContent;
+  if (!text) return;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    copyFeedback.classList.add('show');
+    setTimeout(() => {
+      copyFeedback.classList.remove('show');
+    }, 2000);
+  } catch (err) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    copyFeedback.classList.add('show');
+    setTimeout(() => {
+      copyFeedback.classList.remove('show');
+    }, 2000);
+  }
+});
+
+// Ctrl+Enter to enhance
+inputPrompt.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter' && !enhanceBtn.disabled) {
+    enhancePrompt();
+  }
+});
+
+// ==================== Initialize ====================
+loadSettings();
+loadHistory();
+
+if (!currentApiKey) {
+  setTimeout(openSettings, 500);
+}
