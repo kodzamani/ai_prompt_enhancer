@@ -25,7 +25,7 @@ A clean, minimal desktop application that transforms your prompts into optimized
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/kodzamani/ai-prompt-enhancer.git
+git clone https://github.com/kodzamani/ai_prompt_enhancer.git
 cd ai-prompt-enhancer
 ```
 
