@@ -274,7 +274,7 @@ function handleProviderChange() {
 }
 
 async function loadModels() {
-  const apiKey = currentProvider === 'openrouter' ? apiKeyInput.value.trim() : null;
+  const apiKey = currentProvider === 'openrouter' ? apiKeyInput.value.trim() : '';
   const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
   
   // Validation

@@ -1,9 +1,11 @@
 {
   "productName": "AI Prompt Enhancer",
   "version": "1.0.0",
-  "identifier": "com.aipromptenhancer.app",
+  "identifier": "com.aipromptenhancer.desktop",
   "build": {
-    "frontendDist": "../"
+    "beforeDevCommand": "npm run copy-web",
+    "beforeBuildCommand": "npm run copy-web",
+    "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,
@@ -14,9 +16,10 @@
         "height": 800,
         "minWidth": 1200,
         "minHeight": 800,
-        "maximizable": false,
-        "resizable": false,
-        "center": true
+        "maximizable": true,
+        "resizable": true,
+        "center": true,
+        "theme": "Light"
       }
     ],
     "security": {

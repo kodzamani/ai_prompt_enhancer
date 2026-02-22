@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AI Prompt Enhancer - Transform your prompts for AI coding assistants",
   "scripts": {
+    "copy-web": "node copy-web.js",
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build",
