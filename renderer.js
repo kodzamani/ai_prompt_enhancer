@@ -370,13 +370,20 @@ function openSettings() {
   // Update UI based on provider
   handleProviderChange();
   
-  // Load models if they were previously loaded
-  if (availableModels.length > 0) {
-    populateModels(availableModels);
-    modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
-  } else if (currentModel) {
-    // If we have a saved model but no loaded models, show hint
-    modelHint.textContent = 'Click "Load Models" to refresh the model list.';
+  // Auto-load models when settings is opened
+  if (currentProvider === 'openrouter' && currentApiKey) {
+    loadModels();
+  } else if (currentProvider === 'ollama' && currentOllamaUrl) {
+    loadModels();
+  } else {
+    // Load models if they were previously loaded
+    if (availableModels.length > 0) {
+      populateModels(availableModels);
+      modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
+    } else if (currentModel) {
+      // If we have a saved model but no loaded models, show hint
+      modelHint.textContent = 'Click "Load Models" to refresh the model list.';
+    }
   }
 }
 
