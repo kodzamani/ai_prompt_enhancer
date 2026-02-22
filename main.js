@@ -61,7 +61,7 @@ ipcMain.handle('enhance-prompt', async (event, { apiKey, prompt, language }) => 
         'X-Title': 'AI Prompt Enhancer'
       },
       body: JSON.stringify({
-        model: 'mistralai/devstral-2512:free',
+        model: 'z-ai/glm-4.5-air:free',
         messages: [
           {
             role: 'system',
