@@ -298,7 +298,11 @@ async function loadModels() {
   `;
   
   try {
-    const result = await window.electronAPI.getModels(currentProvider, apiKey, ollamaUrl);
+    const result = await window.__TAURI__.core.invoke('get_models', {
+      provider: currentProvider,
+      apiKey,
+      ollamaUrl
+    });
     
     if (result.success) {
       availableModels = result.models;
@@ -598,14 +602,14 @@ async function enhancePrompt() {
   enhanceBtn.disabled = true;
 
   try {
-    const result = await window.electronAPI.enhancePrompt(
-      currentApiKey,
+    const result = await window.__TAURI__.core.invoke('enhance_prompt', {
+      apiKey: currentApiKey,
       prompt,
-      currentLanguage,
-      currentProvider,
-      currentModel,
-      currentOllamaUrl
-    );
+      language: currentLanguage,
+      provider: currentProvider,
+      model: currentModel,
+      ollamaUrl: currentOllamaUrl
+    });
 
     hideLoading();
     
