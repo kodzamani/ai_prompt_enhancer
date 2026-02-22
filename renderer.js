@@ -30,6 +30,13 @@ const toggleVisibilityBtn = document.getElementById('toggleVisibility');
 const outputLanguage = document.getElementById('outputLanguage');
 const saveSettingsBtn = document.getElementById('saveSettings');
 const saveStatus = document.getElementById('saveStatus');
+const providerRadios = document.querySelectorAll('input[name="provider"]');
+const openrouterSettings = document.getElementById('openrouterSettings');
+const ollamaSettings = document.getElementById('ollamaSettings');
+const ollamaUrlInput = document.getElementById('ollamaUrl');
+const modelSelect = document.getElementById('modelSelect');
+const loadModelsBtn = document.getElementById('loadModelsBtn');
+const modelHint = document.getElementById('modelHint');
 
 // DOM Elements - Output Modal
 const outputModal = document.getElementById('outputModal');
@@ -45,6 +52,10 @@ const eyeOffIcon = toggleVisibilityBtn.querySelector('.eye-off-icon');
 // Settings state
 let currentApiKey = '';
 let currentLanguage = 'English';
+let currentProvider = 'openrouter';
+let currentOllamaUrl = 'http://localhost:11434';
+let currentModel = '';
+let availableModels = [];
 
 // History state
 let promptHistory = [];
@@ -238,16 +249,135 @@ function hideLoading() {
   loadingOverlay.classList.remove('visible');
 }
 
+// ==================== Provider & Model Management ====================
+
+function handleProviderChange() {
+  const selectedProvider = document.querySelector('input[name="provider"]:checked').value;
+  currentProvider = selectedProvider;
+  
+  // Update UI visibility
+  if (selectedProvider === 'openrouter') {
+    openrouterSettings.style.display = 'block';
+    ollamaSettings.style.display = 'none';
+    modelHint.textContent = 'Enter your API key and load available models';
+  } else {
+    openrouterSettings.style.display = 'none';
+    ollamaSettings.style.display = 'block';
+    modelHint.textContent = 'Enter your Ollama URL and load available models';
+  }
+  
+  // Clear model selection when provider changes
+  currentModel = '';
+  availableModels = [];
+  modelSelect.innerHTML = '<option value="">Select a model...</option>';
+  modelSelect.disabled = true;
+}
+
+async function loadModels() {
+  const apiKey = currentProvider === 'openrouter' ? apiKeyInput.value.trim() : null;
+  const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+  
+  // Validation
+  if (currentProvider === 'openrouter' && !apiKey) {
+    showSettingsError('Please enter your OpenRouter API key first.');
+    return;
+  }
+  
+  if (currentProvider === 'ollama' && !ollamaUrl) {
+    showSettingsError('Please enter your Ollama server URL.');
+    return;
+  }
+  
+  // Show loading state
+  loadModelsBtn.disabled = true;
+  loadModelsBtn.innerHTML = `
+    <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+    </svg>
+    Loading...
+  `;
+  
+  try {
+    const result = await window.electronAPI.getModels(currentProvider, apiKey, ollamaUrl);
+    
+    if (result.success) {
+      availableModels = result.models;
+      populateModels(availableModels);
+      modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
+    } else {
+      showSettingsError(result.error || 'Failed to load models.');
+    }
+  } catch (error) {
+    showSettingsError('Failed to connect to the API. Please check your settings.');
+  } finally {
+    loadModelsBtn.disabled = false;
+    loadModelsBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+        <path d="M16 21h5v-5"></path>
+      </svg>
+      Load Models
+    `;
+  }
+}
+
+function populateModels(models) {
+  modelSelect.innerHTML = '<option value="">Select a model...</option>';
+  
+  models.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.id;
+    option.textContent = model.name || model.id;
+    modelSelect.appendChild(option);
+  });
+  
+  modelSelect.disabled = false;
+  
+  // Select previously saved model if it exists in the list
+  if (currentModel && models.find(m => m.id === currentModel)) {
+    modelSelect.value = currentModel;
+  }
+}
+
+// Event listeners for provider and model management
+providerRadios.forEach(radio => {
+  radio.addEventListener('change', handleProviderChange);
+});
+
+loadModelsBtn.addEventListener('click', loadModels);
+
+modelSelect.addEventListener('change', () => {
+  currentModel = modelSelect.value;
+});
+
 // ==================== Settings Modal ====================
 
 function openSettings() {
   settingsModal.classList.add('visible');
   apiKeyInput.value = currentApiKey;
   outputLanguage.value = currentLanguage;
+  ollamaUrlInput.value = currentOllamaUrl;
   apiKeyInput.type = 'password';
   eyeIcon.style.display = 'block';
   eyeOffIcon.style.display = 'none';
   saveStatus.classList.remove('visible');
+  
+  // Set provider radio
+  document.querySelector(`input[name="provider"][value="${currentProvider}"]`).checked = true;
+  
+  // Update UI based on provider
+  handleProviderChange();
+  
+  // Load models if they were previously loaded
+  if (availableModels.length > 0) {
+    populateModels(availableModels);
+    modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
+  } else if (currentModel) {
+    // If we have a saved model but no loaded models, show hint
+    modelHint.textContent = 'Click "Load Models" to refresh the model list.';
+  }
 }
 
 function closeSettingsModal() {
@@ -275,14 +405,33 @@ toggleVisibilityBtn.addEventListener('click', () => {
 saveSettingsBtn.addEventListener('click', () => {
   const apiKey = apiKeyInput.value.trim();
   const language = outputLanguage.value;
+  const provider = document.querySelector('input[name="provider"]:checked').value;
+  const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+  const model = modelSelect.value;
   
-  if (apiKey && !apiKey.startsWith('sk-')) {
+  // Validation
+  if (provider === 'openrouter' && apiKey && !apiKey.startsWith('sk-')) {
     showSettingsError('Invalid API key format. Key should start with "sk-"');
     return;
   }
   
+  if (provider === 'openrouter' && !apiKey) {
+    showSettingsError('Please enter your OpenRouter API key.');
+    return;
+  }
+  
+  if (!model) {
+    showSettingsError('Please select a model.');
+    return;
+  }
+  
   try {
-    if (apiKey) {
+    // Save provider
+    localStorage.setItem('ai_provider', provider);
+    currentProvider = provider;
+    
+    // Save API key (only for OpenRouter)
+    if (provider === 'openrouter') {
       localStorage.setItem('openrouter_api_key', apiKey);
       currentApiKey = apiKey;
     } else {
@@ -290,11 +439,27 @@ saveSettingsBtn.addEventListener('click', () => {
       currentApiKey = '';
     }
     
+    // Save Ollama URL
+    localStorage.setItem('ollama_url', ollamaUrl);
+    currentOllamaUrl = ollamaUrl;
+    
+    // Save language
     localStorage.setItem('selectedLanguage', language);
     currentLanguage = language;
     
+    // Save model
+    localStorage.setItem('selected_model', model);
+    currentModel = model;
+    
+    // Show success
+    saveStatus.textContent = 'Settings saved successfully!';
+    saveStatus.style.color = 'var(--success-color, #10b981)';
+    saveStatus.classList.add('visible');
+    
     updateEnhanceButton();
-    closeSettingsModal();
+    setTimeout(() => {
+      closeSettingsModal();
+    }, 500);
     
   } catch (e) {
     showSettingsError('Failed to save settings. Please try again.');
@@ -303,7 +468,7 @@ saveSettingsBtn.addEventListener('click', () => {
 
 function showSettingsError(message) {
   saveStatus.textContent = message;
-  saveStatus.style.color = 'var(--error-color)';
+  saveStatus.style.color = 'var(--error-color, #ef4444)';
   saveStatus.classList.add('visible');
   setTimeout(() => {
     saveStatus.classList.remove('visible');
@@ -353,6 +518,9 @@ function loadSettings() {
   try {
     const savedKey = localStorage.getItem('openrouter_api_key');
     const savedLanguage = localStorage.getItem('selectedLanguage');
+    const savedProvider = localStorage.getItem('ai_provider');
+    const savedOllamaUrl = localStorage.getItem('ollama_url');
+    const savedModel = localStorage.getItem('selected_model');
     
     if (savedKey) {
       currentApiKey = savedKey;
@@ -360,6 +528,18 @@ function loadSettings() {
     
     if (savedLanguage) {
       currentLanguage = savedLanguage;
+    }
+    
+    if (savedProvider) {
+      currentProvider = savedProvider;
+    }
+    
+    if (savedOllamaUrl) {
+      currentOllamaUrl = savedOllamaUrl;
+    }
+    
+    if (savedModel) {
+      currentModel = savedModel;
     }
     
     updateEnhanceButton();
@@ -371,9 +551,11 @@ function loadSettings() {
 // ==================== Main Functionality ====================
 
 function updateEnhanceButton() {
-  const hasApiKey = currentApiKey.length > 0;
   const hasPrompt = inputPrompt.value.trim().length > 0;
-  enhanceBtn.disabled = !hasApiKey || !hasPrompt;
+  const hasModel = currentModel.length > 0;
+  const hasApiKey = currentProvider === 'openrouter' ? currentApiKey.length > 0 : true;
+  
+  enhanceBtn.disabled = !hasApiKey || !hasPrompt || !hasModel;
 }
 
 inputPrompt.addEventListener('input', updateEnhanceButton);
@@ -389,7 +571,13 @@ function hideError() {
 
 // Enhance prompt
 async function enhancePrompt() {
-  if (!currentApiKey) {
+  if (!currentModel) {
+    showError('Please select a model in Settings first.');
+    openSettings();
+    return;
+  }
+  
+  if (currentProvider === 'openrouter' && !currentApiKey) {
     showError('Please set your API key in Settings first.');
     openSettings();
     return;
@@ -403,7 +591,14 @@ async function enhancePrompt() {
   enhanceBtn.disabled = true;
 
   try {
-    const result = await window.electronAPI.enhancePrompt(currentApiKey, prompt, currentLanguage);
+    const result = await window.electronAPI.enhancePrompt(
+      currentApiKey,
+      prompt,
+      currentLanguage,
+      currentProvider,
+      currentModel,
+      currentOllamaUrl
+    );
 
     hideLoading();
     
@@ -416,7 +611,7 @@ async function enhancePrompt() {
     }
   } catch (error) {
     hideLoading();
-    showError('Failed to connect to the API. Please check your internet connection.');
+    showError('Failed to connect to the API. Please check your settings.');
   } finally {
     updateEnhanceButton();
   }
@@ -460,6 +655,6 @@ inputPrompt.addEventListener('keydown', (e) => {
 loadSettings();
 loadHistory();
 
-if (!currentApiKey) {
+if (!currentModel || (currentProvider === 'openrouter' && !currentApiKey)) {
   setTimeout(openSettings, 500);
 }
