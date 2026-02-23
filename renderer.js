@@ -255,10 +255,10 @@ function hideLoading() {
 
 // ==================== Provider & Model Management ====================
 
-function handleProviderChange() {
+function handleProviderChange(silent = false) {
   const selectedProvider = document.querySelector('input[name="provider"]:checked').value;
   currentProvider = selectedProvider;
-  
+
   // Update UI visibility
   if (selectedProvider === 'openrouter') {
     openrouterSettings.style.display = 'block';
@@ -269,12 +269,15 @@ function handleProviderChange() {
     ollamaSettings.style.display = 'block';
     modelHint.textContent = 'Enter your Ollama URL and load available models';
   }
-  
-  // Clear model selection when provider changes
-  currentModel = '';
-  availableModels = [];
-  modelSelect.innerHTML = '<option value="">Select a model...</option>';
-  modelSelect.disabled = true;
+
+  // Don't clear model selection when just switching tabs in settings
+  // Only clear if explicitly changing providers (not silent mode)
+  if (!silent) {
+    currentModel = '';
+    availableModels = [];
+    modelSelect.innerHTML = '<option value="">Select a model...</option>';
+    modelSelect.disabled = true;
+  }
 }
 
 async function loadModels() {
@@ -394,35 +397,23 @@ function openSettings() {
   // Set provider radio
   document.querySelector(`input[name="provider"][value="${currentProvider}"]`).checked = true;
 
-  // Update UI based on provider
-  handleProviderChange();
+  // Update UI based on provider (silent mode - don't clear selection)
+  handleProviderChange(true);
 
-  // Auto-load models when settings is opened
-  if (currentProvider === 'openrouter' && currentApiKey) {
-    loadModels();
-  } else if (currentProvider === 'ollama' && currentOllamaUrl) {
-    loadModels();
-  } else {
-    // Load models if they were previously loaded
-    if (availableModels.length > 0) {
-      populateModels(availableModels);
-      modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
-      // Restore model selection
-      if (currentModel) {
-        modelSelect.value = currentModel;
-      }
-    } else if (currentModel) {
-      // If we have a saved model but no loaded models, show hint
-      modelHint.textContent = 'Click "Load Models" to refresh the model list.';
-      // Show current model in select
-      const option = document.createElement('option');
-      option.value = currentModel;
-      option.textContent = currentModel;
-      option.selected = true;
-      modelSelect.innerHTML = '<option value="">Select a model...</option>';
-      modelSelect.appendChild(option);
-      modelSelect.disabled = false;
-    }
+  // Populate models from cache if available
+  if (availableModels.length > 0) {
+    populateModels(availableModels);
+    modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
+  } else if (currentModel) {
+    // Show current model even without fetching
+    modelHint.textContent = 'Click "Load Models" to refresh the model list.';
+    const option = document.createElement('option');
+    option.value = currentModel;
+    option.textContent = currentModel;
+    option.selected = true;
+    modelSelect.innerHTML = '<option value="">Select a model...</option>';
+    modelSelect.appendChild(option);
+    modelSelect.disabled = false;
   }
 }
 
@@ -567,31 +558,65 @@ function loadSettings() {
     const savedProvider = localStorage.getItem('ai_provider');
     const savedOllamaUrl = localStorage.getItem('ollama_url');
     const savedModel = localStorage.getItem('selected_model');
-    
+
     if (savedKey) {
       currentApiKey = savedKey;
     }
-    
+
     if (savedLanguage) {
       currentLanguage = savedLanguage;
     }
-    
+
     if (savedProvider) {
       currentProvider = savedProvider;
     }
-    
+
     if (savedOllamaUrl) {
       currentOllamaUrl = savedOllamaUrl;
     }
-    
+
     if (savedModel) {
       currentModel = savedModel;
     }
 
     updateEnhanceButton();
     updateModelBadge();
+
+    // Auto-fetch models on startup if Ollama provider is selected
+    if (currentProvider === 'ollama' && currentOllamaUrl && currentModel) {
+      // Fetch models in background to refresh the list
+      fetchModelsOnStartup();
+    }
   } catch (e) {
     // localStorage unavailable
+  }
+}
+
+async function fetchModelsOnStartup() {
+  try {
+    const result = await window.__TAURI__.core.invoke('get_models', {
+      provider: currentProvider,
+      apiKey: '',
+      ollamaUrl: currentOllamaUrl
+    });
+
+    if (result.success) {
+      availableModels = result.models;
+      // Restore model selection if it still exists
+      if (currentModel && availableModels.find(m => m.id === currentModel)) {
+        populateModels(availableModels);
+        modelHint.textContent = `Loaded ${availableModels.length} models.`;
+      } else if (availableModels.length > 0) {
+        // If saved model is gone, select first available
+        currentModel = availableModels[0].id;
+        populateModels(availableModels);
+        modelSelect.value = currentModel;
+        updateModelBadge();
+        updateEnhanceButton();
+      }
+    }
+  } catch (error) {
+    // Silently fail - user can manually load models later
   }
 }
 
