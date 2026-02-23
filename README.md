@@ -1,24 +1,66 @@
-# AI Prompt Enhancer
+<p align="center">
+  <img src="icon.png" width="128" height="128" alt="AI Prompt Enhancer icon">
+</p>
 
-A clean, minimal desktop application that transforms your prompts into optimized versions for AI coding assistants like Cursor, Antigravity, Windsurf, and similar tools.
+<h1 align="center">AI Prompt Enhancer</h1>
 
-![AI Prompt Enhancer](https://img.shields.io/badge/Electron-39.x-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+<p align="center">
+  <strong>A lightweight desktop application that transforms your prompts into optimized versions for AI coding assistants like Cursor, Antigravity, Windsurf, and similar tools.</strong>
+</p>
+
+<p align="center">
+  Convert any prompt into a structured, actionable format with multilingual support, prompt history, and one-click copy functionality.
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> · <a href="#getting-started">Getting Started</a> · <a href="#building-from-source">Build</a> · <a href="#license">License</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Tauri-2.x-orange"> <img src="https://img.shields.io/badge/License-MIT-green">
+</p>
+
+<p align="center">
+  <img src="docs/screenshoot.png" width="800" alt="AI Prompt Enhancer screenshot">
+</p>
+
+---
+
+## What is AI Prompt Enhancer?
+
+AI Prompt Enhancer is a clean, minimal desktop application that takes your raw prompts and transforms them into well-structured, actionable formats optimized for AI coding assistants. Whether you're building a web app, debugging code, or designing a system architecture, this tool helps you communicate more effectively with AI tools.
+
+The application uses the OpenRouter API (Devstral Free model) to enhance your prompts while keeping your API key stored securely on your local machine. All prompt history is also stored locally, ensuring your data stays private.
 
 ## Features
 
-- **Prompt Enhancement**: Converts any prompt into a structured, actionable format optimized for AI coding assistants
-- **Multilingual Support**: Accept prompts in any language, output in 8 different languages
-- **TODO Format**: Automatically structures tasks as numbered todo items
-- **Prompt History**: View and manage your previous prompts with input/output details
-- **API Key Storage**: Securely saves your OpenRouter API key locally
-- **One-Click Copy**: Easily copy enhanced prompts to clipboard
-- **Clean UI**: Minimal, shadow-free design suitable for commercial use
+### Prompt Enhancement
+- **Structured output** — converts any prompt into organized Objective, Tasks, and Requirements sections
+- **Actionable format** — automatically structures tasks as numbered todo items
+- **Context-aware** — adds relevant technical requirements based on your prompt
+
+### Multilingual Support
+- **Input any language** — accepts prompts in any language
+- **8 output languages** — English, Türkçe, 中文, Français, 한국어, 日本語, हिन्दी, Shqip
+- **Auto-detection** — understands context across languages
+
+### User Experience
+- **Prompt history** — view and manage your previous prompts with input/output details
+- **One-click copy** — easily copy enhanced prompts to clipboard
+- **Clean UI** — minimal, shadow-free design suitable for commercial use
+- **Keyboard shortcuts** — press `Ctrl+Enter` to enhance prompts quickly
+
+### Security
+- **Local API key storage** — your OpenRouter API key is stored securely on your machine
+- **No cloud dependencies** — all prompt history is stored locally
+- **Open source** — audit the code yourself
 
 ## Getting Started
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18 or higher)
+- [Rust](https://www.rust-lang.org/tools/install)
 - [OpenRouter API Key](https://openrouter.ai/) (free tier available)
 
 ### Installation
@@ -26,7 +68,7 @@ A clean, minimal desktop application that transforms your prompts into optimized
 1. Clone the repository:
 ```bash
 git clone https://github.com/kodzamani/ai_prompt_enhancer.git
-cd ai-prompt-enhancer
+cd ai_prompt_enhancer
 ```
 
 2. Install dependencies:
@@ -36,28 +78,8 @@ npm install
 
 3. Run the application:
 ```bash
-npm start
+npm run dev
 ```
-
-### Building Executables
-
-Build for your platform:
-
-```bash
-# Windows
-npm run build:win
-
-# macOS
-npm run build:mac
-
-# Linux
-npm run build:linux
-
-# All platforms
-npm run dist
-```
-
-Output files will be in the `dist` folder.
 
 ### Getting an OpenRouter API Key
 
@@ -77,12 +99,12 @@ Output files will be in the `dist` folder.
 
 ## Example
 
-**Input (Turkish):**
+**Input:**
 ```
-Bir blog sitesi yap, kullanıcı kayıt olabilsin, yazı yazabilsin, yorum yapabilsin
+Create a blog site where users can register, write posts, and leave comments
 ```
 
-**Output (English):**
+**Output:**
 ```
 ## Objective
 Build a full-featured blog platform with user authentication and content management capabilities.
@@ -103,11 +125,50 @@ Build a full-featured blog platform with user authentication and content managem
 - Clean, modern UI design
 ```
 
+## Building from Source
+
+### Build for your platform:
+
+```bash
+# Windows
+npm run build:win
+
+# macOS
+npm run build:mac
+
+# Linux
+npm run build:linux
+
+# All platforms
+npm run build
+```
+
+Output files will be in the `src-tauri/target/release/bundle/` folder.
+
+### Project Structure
+
+```
+ai-prompt-enhancer/
+├── src-tauri/              # Rust backend
+│   ├── src/
+│   │   ├── main.rs         # Tauri entry point
+│   │   ├── lib.rs          # Library exports
+│   │   └── commands.rs     # Tauri commands (API calls)
+│   ├── Cargo.toml          # Rust dependencies
+│   └── tauri.conf.json     # Tauri configuration
+├── index.html              # Main HTML file
+├── renderer.js              # Frontend logic
+├── styles.css              # Application styles
+├── package.json            # Node.js dependencies
+└── copy-web.js             # Build script
+```
+
 ## Tech Stack
 
-- **Electron** - Cross-platform desktop app framework
-- **OpenRouter API** - AI model access (Devstral Free)
-- **Vanilla JS** - No framework dependencies for the frontend
+- **Tauri 2.x** — Lightweight, secure cross-platform desktop app framework
+- **Rust** — Backend logic and API communication
+- **OpenRouter API** — AI model access (Devstral Free)
+- **Vanilla JS** — No framework dependencies for the frontend
 
 ## Supported Output Languages
 
@@ -122,7 +183,7 @@ Build a full-featured blog platform with user authentication and content managem
 
 ## License
 
-MIT License - feel free to use this project for personal or commercial purposes.
+MIT License - feel free to use this project for personal or commercial purposes. See [LICENSE](LICENSE) for details.
 
 ## Contributing
 
