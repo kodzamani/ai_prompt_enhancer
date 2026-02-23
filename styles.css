@@ -19,7 +19,8 @@
   --sidebar-width: 380px;
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
 
@@ -209,13 +210,18 @@ body {
   pointer-events: none;
 }
 
+.title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Container */
 .container {
   flex: 1;
   width: 100%;
-  max-width: 900px;
   margin: 0 auto;
-  padding: 20px 24px 16px;
+  padding: 20px 20px 12px;
   display: flex;
   flex-direction: column;
 }
@@ -235,7 +241,7 @@ header {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 24px;
 }
 
 .header-content {
@@ -259,11 +265,7 @@ h1 {
 .model-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  gap: 4px;
   font-size: 11px;
   color: var(--text-secondary);
   margin-top: 4px;
@@ -503,10 +505,12 @@ textarea::placeholder {
     width: 0%;
     margin-left: 0%;
   }
+
   50% {
     width: 60%;
     margin-left: 20%;
   }
+
   100% {
     width: 0%;
     margin-left: 100%;
@@ -547,10 +551,14 @@ textarea::placeholder {
 }
 
 @keyframes bounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: scale(0.6);
     opacity: 0.5;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;
@@ -805,7 +813,7 @@ footer a:hover {
   text-align: center;
 }
 
-.provider-option input[type="radio"]:checked + .provider-label {
+.provider-option input[type="radio"]:checked+.provider-label {
   border-color: var(--accent-color);
   background-color: rgba(37, 99, 235, 0.05);
   color: var(--accent-color);
@@ -815,7 +823,7 @@ footer a:hover {
   border-color: var(--text-secondary);
 }
 
-.provider-option input[type="radio"]:checked + .provider-label:hover {
+.provider-option input[type="radio"]:checked+.provider-label:hover {
   border-color: var(--accent-color);
 }
 
@@ -829,6 +837,7 @@ footer a:hover {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -859,6 +868,7 @@ footer a:hover {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -935,25 +945,25 @@ footer a:hover {
   .sidebar {
     width: 100%;
   }
-  
+
   .modal-output,
   .modal-history-detail {
     max-width: 95%;
     max-height: 90vh;
   }
-  
+
   textarea {
     min-height: 200px;
   }
-  
+
   .output-content {
     max-height: calc(90vh - 80px);
   }
-  
+
   .progress-container {
     width: 220px;
   }
-  
+
   .loading-text {
     font-size: 16px;
   }
