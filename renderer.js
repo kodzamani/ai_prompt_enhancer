@@ -45,6 +45,10 @@ const outputContent = document.getElementById('outputContent');
 const copyBtn = document.getElementById('copyBtn');
 const copyFeedback = document.getElementById('copyFeedback');
 
+// DOM Elements - Model Badge
+const modelBadge = document.getElementById('modelBadge');
+const modelBadgeText = document.getElementById('modelBadgeText');
+
 // Eye icons for toggle visibility
 const eyeIcon = toggleVisibilityBtn.querySelector('.eye-icon');
 const eyeOffIcon = toggleVisibilityBtn.querySelector('.eye-off-icon');
@@ -329,19 +333,20 @@ async function loadModels() {
 
 function populateModels(models) {
   modelSelect.innerHTML = '<option value="">Select a model...</option>';
-  
+
   models.forEach(model => {
     const option = document.createElement('option');
     option.value = model.id;
     option.textContent = model.name || model.id;
     modelSelect.appendChild(option);
   });
-  
+
   modelSelect.disabled = false;
-  
+
   // Select previously saved model if it exists in the list
   if (currentModel && models.find(m => m.id === currentModel)) {
     modelSelect.value = currentModel;
+    updateModelBadge();
   }
 }
 
@@ -354,7 +359,25 @@ loadModelsBtn.addEventListener('click', loadModels);
 
 modelSelect.addEventListener('change', () => {
   currentModel = modelSelect.value;
+  updateModelBadge();
 });
+
+// ==================== Model Badge ====================
+
+function updateModelBadge() {
+  if (!modelBadge || !modelBadgeText) return;
+  
+  if (currentModel) {
+    // Model adını bul (eğer availableModels'da varsa)
+    const modelInfo = availableModels.find(m => m.id === currentModel);
+    const modelName = modelInfo ? (modelInfo.name || modelInfo.id) : currentModel;
+    modelBadgeText.textContent = modelName;
+    modelBadge.style.display = 'inline-flex';
+  } else {
+    modelBadgeText.textContent = 'No model selected';
+    modelBadge.style.display = 'inline-flex';
+  }
+}
 
 // ==================== Settings Modal ====================
 
@@ -367,13 +390,13 @@ function openSettings() {
   eyeIcon.style.display = 'block';
   eyeOffIcon.style.display = 'none';
   saveStatus.classList.remove('visible');
-  
+
   // Set provider radio
   document.querySelector(`input[name="provider"][value="${currentProvider}"]`).checked = true;
-  
+
   // Update UI based on provider
   handleProviderChange();
-  
+
   // Auto-load models when settings is opened
   if (currentProvider === 'openrouter' && currentApiKey) {
     loadModels();
@@ -384,9 +407,21 @@ function openSettings() {
     if (availableModels.length > 0) {
       populateModels(availableModels);
       modelHint.textContent = `Loaded ${availableModels.length} models. Select one to continue.`;
+      // Restore model selection
+      if (currentModel) {
+        modelSelect.value = currentModel;
+      }
     } else if (currentModel) {
       // If we have a saved model but no loaded models, show hint
       modelHint.textContent = 'Click "Load Models" to refresh the model list.';
+      // Show current model in select
+      const option = document.createElement('option');
+      option.value = currentModel;
+      option.textContent = currentModel;
+      option.selected = true;
+      modelSelect.innerHTML = '<option value="">Select a model...</option>';
+      modelSelect.appendChild(option);
+      modelSelect.disabled = false;
     }
   }
 }
@@ -552,8 +587,9 @@ function loadSettings() {
     if (savedModel) {
       currentModel = savedModel;
     }
-    
+
     updateEnhanceButton();
+    updateModelBadge();
   } catch (e) {
     // localStorage unavailable
   }
