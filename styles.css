@@ -436,6 +436,10 @@ textarea::placeholder {
   cursor: not-allowed;
 }
 
+.btn-primary:not(:disabled) svg path[fill="#09244BFF"] {
+  fill: white !important;
+}
+
 .btn-secondary {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
